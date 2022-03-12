@@ -16,6 +16,10 @@ module.exports.getUser = (req, res) => {
     })
     .then((user) => res.send({ data: user }))
     .catch((err) => {
+      if (err.name === 'CastError') {
+        res.status(400).send({ message: `Переданы некорректные данные: '${err.value}' вместо ${err.path}` });
+        return;
+      }
       if (err.statusCode === 404) {
         res.status(404).send({ message: err.errorMessage });
       } else {
@@ -53,12 +57,15 @@ module.exports.updateUser = (req, res) => {
     },
     {
       new: true,
+      runValidators: true,
     },
   )
     .orFail(() => {
       throw new ErrorNotFound(`Пользователь с id:${req.user._id} не найден`);
     })
-    .then((user) => res.send({ data: user }))
+    .then((user) => {
+      res.send({ data: user });
+    })
     .catch((err) => {
       if (err.statusCode === 404) {
         res.status(404).send({ message: err.errorMessage });
@@ -88,6 +95,7 @@ module.exports.updateAvatar = (req, res) => {
     },
     {
       new: true,
+      runValidators: true,
     },
   )
     .orFail(() => {

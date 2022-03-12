@@ -39,6 +39,10 @@ module.exports.deleteCard = (req, res) => {
       res.send({ data: card });
     })
     .catch((err) => {
+      if (err.name === 'CastError') {
+        res.status(400).send({ message: `Переданы некорректные данные: '${err.value}' вместо ${err.path}` });
+        return;
+      }
       if (err.statusCode === 404) {
         res.status(404).send({ message: err.errorMessage });
       } else {
@@ -51,13 +55,17 @@ module.exports.deleteCard = (req, res) => {
 module.exports.likeCard = (req, res) => Card.findByIdAndUpdate(
   req.params.cardId,
   { $addToSet: { likes: req.user._id } },
-  { new: true },
+  { new: true, runValidators: true },
 )
   .orFail(() => {
     throw new ErrorNotFound(`Карточка с id:${req.params.cardId} не существует`);
   })
   .then((card) => res.send({ data: card }))
   .catch((err) => {
+    if (err.name === 'CastError') {
+      res.status(400).send({ message: `Переданы некорректные данные: '${err.value}' вместо ${err.path}` });
+      return;
+    }
     if (err.statusCode === 404) {
       res.status(404).send({ message: err.errorMessage });
     } else {
@@ -69,10 +77,17 @@ module.exports.likeCard = (req, res) => Card.findByIdAndUpdate(
 module.exports.dislikeCard = (req, res) => Card.findByIdAndUpdate(
   req.params.cardId,
   { $pull: { likes: req.user._id } },
-  { new: true },
+  { new: true, runValidators: true },
 )
+  .orFail(() => {
+    throw new ErrorNotFound(`Карточка с id:${req.params.cardId} не существует`);
+  })
   .then((card) => res.send({ data: card }))
   .catch((err) => {
+    if (err.name === 'CastError') {
+      res.status(400).send({ message: `Переданы некорректные данные: '${err.value}' вместо ${err.path}` });
+      return;
+    }
     if (err.statusCode === 404) {
       res.status(404).send({ message: err.errorMessage });
     } else {
