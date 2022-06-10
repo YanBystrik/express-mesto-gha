@@ -1,19 +1,15 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
+const { createUser } = require('./controllers/createUser');
+const { login } = require('./controllers/login');
+const auth = require('./middlewares/auth');
 
 const { PORT = 3000 } = process.env;
 
 const app = express();
-
-app.use((req, res, next) => {
-  req.user = {
-    _id: '62053426ff79ad4d91c894f8',
-  };
-
-  next();
-});
-
+app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -26,6 +22,11 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
   useNewUrlParser: true,
 });
 
+app.post('/signin', login);
+app.post('/signup', createUser);
+
+app.use(auth);
+
 app.use(require('./routes/users'));
 app.use(require('./routes/cards'));
 
@@ -33,4 +34,16 @@ app.use((req, res, next) => {
   res.status(404).send({ message: '404 такой страницы нет' });
 
   next();
+});
+
+app.use((err, req, res, next) => {
+  const { statusCode = 500, message } = err;
+
+  res
+    .status(statusCode)
+    .send({
+      message: statusCode === 500
+        ? 'На сервере произошла ошибка'
+        : message,
+    });
 });

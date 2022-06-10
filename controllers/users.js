@@ -1,54 +1,39 @@
-/* eslint-disable no-constant-condition */
-/* eslint-disable no-underscore-dangle */
 const User = require('../models/user');
 const ErrorNotFound = require('../utils/errorNotFound');
+const InvalidError = require('../utils/invalidError');
 
-module.exports.getUsers = (req, res) => {
+module.exports.getUsers = (req, res, next) => {
   User.find({})
     .then((users) => res.send({ data: users }))
-    .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
+    .catch(next);
 };
 
-module.exports.getUser = (req, res) => {
-  User.findById(req.params.userId)
-    .orFail(() => {
-      throw new ErrorNotFound(`Пользователь с id:${req.params.userId} не найден`);
+module.exports.getUserMe = (req, res, next) => {
+  User.findOne(req.user)
+    .then((user) => {
+      res.send({ data: user });
     })
-    .then((user) => res.send({ data: user }))
+    .catch(next);
+};
+
+module.exports.getUser = (req, res, next) => {
+  User.findById(req.params.userId)
+    .then((user) => {
+      if (!user) {
+        throw new ErrorNotFound('Нет пользователя с таким id');
+      }
+
+      res.send(user);
+    })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(400).send({ message: `Переданы некорректные данные: '${err.value}' вместо ${err.path}` });
-        return;
+        next(new InvalidError('Неверный id'));
       }
-      if (err.statusCode === 404) {
-        res.status(404).send({ message: err.errorMessage });
-      } else {
-        res.status(500).send({ message: `Непредвиденная ошибка: ${err.message}` });
-      }
-    });
-};
-module.exports.createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
-
-  User.create({ name, about, avatar })
-    .then((user) => res.send({ data: user }))
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        let errorMessage = 'Переданны неверные данные: ';
-        const errorValues = Object.values(err.errors);
-        errorValues.forEach((errVal) => {
-          if (typeof errVal === 'object') {
-            errorMessage += `Ошибка в поле ${errVal.path}, `;
-          }
-        });
-        res.status(400).send({ message: errorMessage });
-      } else {
-        res.status(500).send({ message: `Непредвиденная ошибка: ${err.message}` });
-      }
+      next(err);
     });
 };
 
-module.exports.updateUser = (req, res) => {
+module.exports.updateUser = (req, res, next) => {
   User.findByIdAndUpdate(
     req.user._id,
     {
@@ -60,17 +45,14 @@ module.exports.updateUser = (req, res) => {
       runValidators: true,
     },
   )
-    .orFail(() => {
-      throw new ErrorNotFound(`Пользователь с id:${req.user._id} не найден`);
-    })
     .then((user) => {
+      if (!user) {
+        throw new ErrorNotFound('Нет пользователя с таким id');
+      }
+
       res.send({ data: user });
     })
     .catch((err) => {
-      if (err.statusCode === 404) {
-        res.status(404).send({ message: err.errorMessage });
-        return;
-      }
       if (err.name === 'ValidationError') {
         let errorMessage = 'Переданны неверные данные: ';
         const errorValues = Object.values(err.errors);
@@ -79,16 +61,14 @@ module.exports.updateUser = (req, res) => {
             errorMessage += `Ошибка в поле ${errVal.path}, `;
           }
         });
-        res.status(400).send({ message: errorMessage });
-      } else {
-        res.status(500).send({ message: `Непредвиденная ошибка: ${err.message}` });
+        throw new InvalidError({ message: errorMessage });
       }
+      next(err);
     });
 };
 
-module.exports.updateAvatar = (req, res) => {
+module.exports.updateAvatar = (req, res, next) => {
   User.findByIdAndUpdate(
-    // eslint-disable-next-line no-underscore-dangle
     req.user._id,
     {
       avatar: req.body.avatar,
@@ -98,14 +78,16 @@ module.exports.updateAvatar = (req, res) => {
       runValidators: true,
     },
   )
-    .orFail(() => {
-      throw new ErrorNotFound(`Пользователь с id:${req.user._id} не найден`);
+    .then((user) => {
+      if (!user) {
+        throw new ErrorNotFound('Нет пользователя с таким id');
+      }
+
+      res.send({ data: user });
     })
-    .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.statusCode === 404) {
-        res.status(404).send({ message: err.errorMessage });
-        return;
+        throw new ErrorNotFound('Нет пользователя с таким id');
       }
       if (err.name === 'ValidationError') {
         let errorMessage = 'Переданны неверные данные: ';
@@ -115,9 +97,8 @@ module.exports.updateAvatar = (req, res) => {
             errorMessage += `Ошибка в поле ${errVal.path}, `;
           }
         });
-        res.status(400).send({ message: errorMessage });
-      } else {
-        res.status(500).send({ message: `Непредвиденная ошибка: ${err.message}` });
+        throw new InvalidError(errorMessage);
       }
+      next(err);
     });
 };

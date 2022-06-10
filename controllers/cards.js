@@ -1,14 +1,14 @@
-/* eslint-disable no-underscore-dangle */
 const Card = require('../models/card');
 const ErrorNotFound = require('../utils/errorNotFound');
+const InvalidError = require('../utils/invalidError');
 
-module.exports.getCards = (req, res) => {
+module.exports.getCards = (req, res, next) => {
   Card.find({})
     .then((cards) => res.send({ data: cards }))
-    .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
+    .catch(next);
 };
 
-module.exports.createCard = (req, res) => {
+module.exports.createCard = (req, res, next) => {
   const owner = req.user._id;
   const { name, link } = req.body;
 
@@ -23,74 +23,59 @@ module.exports.createCard = (req, res) => {
             errorMessage += `Ошибка в поле ${errVal.path}, `;
           }
         });
-        res.status(400).send({ message: errorMessage });
-      } else {
-        res.status(500).send({ message: `Непредвиденная ошибка: ${err.message}` });
+        throw new InvalidError({ message: errorMessage });
       }
+      next(err);
     });
 };
 
-module.exports.deleteCard = (req, res) => {
+module.exports.deleteCard = (req, res, next) => {
   Card.findByIdAndRemove(req.params.cardId)
-    .orFail(() => {
-      throw new ErrorNotFound(`Карточка с id:${req.params.cardId} не существует`);
-    })
     .then((card) => {
+      if (!card) {
+        throw new ErrorNotFound('Карточка не существует');
+      }
       res.send({ data: card });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(400).send({ message: `Переданы некорректные данные: '${err.value}' вместо ${err.path}` });
-        return;
+        throw new InvalidError({ message: `Переданы некорректные данные: '${err.value}' вместо ${err.path}` });
       }
-      if (err.statusCode === 404) {
-        res.status(404).send({ message: err.errorMessage });
-      } else {
-        res.status(500).send({ message: `Непредвиденная ошибка: ${err.message}` });
-      }
+      next(err);
     });
 };
 
-// eslint-disable-next-line no-unused-vars
-module.exports.likeCard = (req, res) => Card.findByIdAndUpdate(
+module.exports.likeCard = (req, res, next) => Card.findByIdAndUpdate(
   req.params.cardId,
   { $addToSet: { likes: req.user._id } },
   { new: true, runValidators: true },
 )
-  .orFail(() => {
-    throw new ErrorNotFound(`Карточка с id:${req.params.cardId} не существует`);
+  .then((card) => {
+    if (!card) {
+      throw new ErrorNotFound('Карточка не существует');
+    }
   })
-  .then((card) => res.send({ data: card }))
   .catch((err) => {
     if (err.name === 'CastError') {
-      res.status(400).send({ message: `Переданы некорректные данные: '${err.value}' вместо ${err.path}` });
-      return;
+      throw new InvalidError({ message: `Переданы некорректные данные: '${err.value}' вместо ${err.path}` });
     }
-    if (err.statusCode === 404) {
-      res.status(404).send({ message: err.errorMessage });
-    } else {
-      res.status(500).send({ message: `Непредвиденная ошибка: ${err.message}` });
-    }
+    next(err);
   });
 
-// eslint-disable-next-line no-unused-vars
-module.exports.dislikeCard = (req, res) => Card.findByIdAndUpdate(
+module.exports.dislikeCard = (req, res, next) => Card.findByIdAndUpdate(
   req.params.cardId,
   { $pull: { likes: req.user._id } },
   { new: true, runValidators: true },
 )
-  .orFail(() => {
-    throw new ErrorNotFound(`Карточка с id:${req.params.cardId} не существует`);
+  .then((card) => {
+    if (!card) {
+      throw new ErrorNotFound('Карточка не существует');
+    }
+    res.send({ data: card });
   })
-  .then((card) => res.send({ data: card }))
   .catch((err) => {
     if (err.name === 'CastError') {
-      res.status(400).send({ message: `Переданы некорректные данные: '${err.value}' вместо ${err.path}` });
-      return;
+      throw new InvalidError({ message: `Переданы некорректные данные: '${err.value}' вместо ${err.path}` });
     }
-    if (err.statusCode === 404) {
-      res.status(404).send({ message: err.errorMessage });
-    } else {
-      res.status(500).send({ message: `Непредвиденная ошибка: ${err.message}` });
-    }
+    next(err);
   });
