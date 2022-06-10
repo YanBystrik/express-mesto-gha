@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
+const { errors } = require('celebrate');
 const { createUser } = require('./controllers/createUser');
 const { login } = require('./controllers/login');
 const auth = require('./middlewares/auth');
@@ -37,7 +38,9 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use((err, req, res) => {
+app.use(errors());
+
+app.use((err, req, res, next) => {
   const { statusCode = 500, message } = err;
 
   res
