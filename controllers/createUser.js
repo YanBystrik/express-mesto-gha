@@ -14,7 +14,9 @@ module.exports.createUser = (req, res, next) => {
     }))
     .then((user) => {
       if (validator.isEmail(user.email)) {
-        res.send({ data: user });
+        res.send({
+          email: user.email, name: user.name, about: user.about, avatar: user.avatar,
+        });
       } else {
         throw new InvalidError({ message: 'Введены некорректные данные, попробуйте еще раз' });
       }
