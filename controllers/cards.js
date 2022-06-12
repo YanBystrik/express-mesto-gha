@@ -30,14 +30,17 @@ module.exports.createCard = (req, res, next) => {
 };
 
 module.exports.deleteCard = (req, res, next) => {
-  const { id } = req.params;
-  Card.findById(id)
+  const { cardId } = req.params;
+  Card.findById(cardId)
     .then((card) => {
+      if (!card) {
+        return next(new ErrorNotFound('Такой карточки не существует'));
+      }
       if (!card.owner.equals(req.user._id)) {
         return next(new ErrorNotFound('Нельзя удалить чужую карточку'));
       }
       return card.remove()
-        .then(() => res.send('Карточка удалена'));
+        .then(() => res.send({ message: 'Карточка удалена' }));
     })
     .catch(next);
 };
@@ -51,6 +54,7 @@ module.exports.likeCard = (req, res, next) => Card.findByIdAndUpdate(
     if (!card) {
       throw new ErrorNotFound('Карточка не существует');
     }
+    res.send({ data: card });
   })
   .catch(next);
 

@@ -16,7 +16,7 @@ module.exports.login = (req, res, next) => {
           maxAge: 3600000 * 24 * 7,
           httpOnly: true,
         })
-        .send('Вы успешно вошли');
+        .send({ message: 'Вы успешно вошли' });
     })
     .catch(next);
 };
