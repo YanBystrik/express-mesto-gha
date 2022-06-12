@@ -8,6 +8,7 @@ const { errors, celebrate, Joi } = require('celebrate');
 const { createUser } = require('./controllers/createUser');
 const { login } = require('./controllers/login');
 const auth = require('./middlewares/auth');
+const ErrorNotFound = require('./utils/errorNotFound');
 
 const { PORT = 3000 } = process.env;
 
@@ -28,17 +29,17 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
 app.post('/signin', celebrate({
   body: Joi.object().keys({
     email: Joi.string().required().email(),
-    password: Joi.string().required().min(8),
+    password: Joi.string().required(),
   }),
 }), login);
 
 app.post('/signup', celebrate({
   body: Joi.object().keys({
     email: Joi.string().required().email(),
-    password: Joi.string().required().min(8),
-    name: Joi.string().required().min(2).max(30),
+    password: Joi.string().required(),
+    name: Joi.string().min(2).max(30),
     about: Joi.string().min(2).max(30),
-    avatar: Joi.string().required().pattern(/[-a-zA-Z0-9@:%_\+.~#?&\/=]{2,256}\.[a-z]{2,4}\b(\/[-a-zA-Z0-9@:%_\+.~#?&\/=]*)?/i),
+    avatar: Joi.string().pattern(/[-a-zA-Z0-9@:%_\+.~#?&\/=]{2,256}\.[a-z]{2,4}\b(\/[-a-zA-Z0-9@:%_\+.~#?&\/=]*)?/i),
   }),
 }), createUser);
 
@@ -48,9 +49,7 @@ app.use(require('./routes/users'));
 app.use(require('./routes/cards'));
 
 app.use((req, res, next) => {
-  res.status(404).send({ message: '404 такой страницы нет' });
-
-  next();
+  next(new ErrorNotFound('404 такой страницы нет'));
 });
 
 app.use(errors());

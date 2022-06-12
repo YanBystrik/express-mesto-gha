@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
-const validator = require('validator');
 const User = require('../models/user');
+const ConflictError = require('../utils/conflict');
 const InvalidError = require('../utils/invalidError');
 
 module.exports.createUser = (req, res, next) => {
@@ -13,13 +13,12 @@ module.exports.createUser = (req, res, next) => {
       password: hash,
     }))
     .then((user) => {
-      if (validator.isEmail(user.email)) {
-        res.send({
-          email: user.email, name: user.name, about: user.about, avatar: user.avatar,
-        });
-      } else {
-        throw new InvalidError({ message: 'Введены некорректные данные, попробуйте еще раз' });
+      if (!user) {
+        throw new InvalidError('Введены некорректные данные, попробуйте еще раз');
       }
+      res.send({
+        email: user.email, name: user.name, about: user.about, avatar: user.avatar,
+      });
     })
     .catch((err) => {
       if (err.email === 'ValidationError') {
@@ -30,10 +29,10 @@ module.exports.createUser = (req, res, next) => {
             errorMessage += `Ошибка в поле ${errVal.path}, `;
           }
         });
-        throw new InvalidError({ message: errorMessage });
+        next(new InvalidError(errorMessage));
       }
       if (err.code === 11000) {
-        res.status(409).send({ message: 'Пользователь с таким email уже зарегистрирован' });
+        next(new ConflictError('Пользователь с таким email уже зарегистрирован'));
         return;
       }
       next(err);

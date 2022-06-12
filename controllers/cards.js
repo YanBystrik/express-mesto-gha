@@ -23,26 +23,23 @@ module.exports.createCard = (req, res, next) => {
             errorMessage += `Ошибка в поле ${errVal.path}, `;
           }
         });
-        throw new InvalidError({ message: errorMessage });
+        next(new InvalidError(errorMessage));
       }
       next(err);
     });
 };
 
 module.exports.deleteCard = (req, res, next) => {
-  Card.findByIdAndRemove(req.params.cardId)
+  const { id } = req.params;
+  Card.findById(id)
     .then((card) => {
-      if (!card) {
-        throw new ErrorNotFound('Карточка не существует');
+      if (!card.owner.equals(req.user._id)) {
+        return next(new ErrorNotFound('Нельзя удалить чужую карточку'));
       }
-      res.send({ data: card });
+      return card.remove()
+        .then(() => res.send('Карточка удалена'));
     })
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        throw new InvalidError({ message: `Переданы некорректные данные: '${err.value}' вместо ${err.path}` });
-      }
-      next(err);
-    });
+    .catch(next);
 };
 
 module.exports.likeCard = (req, res, next) => Card.findByIdAndUpdate(
@@ -55,12 +52,7 @@ module.exports.likeCard = (req, res, next) => Card.findByIdAndUpdate(
       throw new ErrorNotFound('Карточка не существует');
     }
   })
-  .catch((err) => {
-    if (err.name === 'CastError') {
-      throw new InvalidError({ message: `Переданы некорректные данные: '${err.value}' вместо ${err.path}` });
-    }
-    next(err);
-  });
+  .catch(next);
 
 module.exports.dislikeCard = (req, res, next) => Card.findByIdAndUpdate(
   req.params.cardId,
@@ -73,9 +65,4 @@ module.exports.dislikeCard = (req, res, next) => Card.findByIdAndUpdate(
     }
     res.send({ data: card });
   })
-  .catch((err) => {
-    if (err.name === 'CastError') {
-      throw new InvalidError({ message: `Переданы некорректные данные: '${err.value}' вместо ${err.path}` });
-    }
-    next(err);
-  });
+  .catch(next);

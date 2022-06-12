@@ -9,7 +9,7 @@ module.exports.getUsers = (req, res, next) => {
 };
 
 module.exports.getUserMe = (req, res, next) => {
-  User.findOne(req.user)
+  User.findOne({ id: req.user._id })
     .then((user) => {
       res.send({ data: user });
     })
@@ -61,7 +61,7 @@ module.exports.updateUser = (req, res, next) => {
             errorMessage += `Ошибка в поле ${errVal.path}, `;
           }
         });
-        throw new InvalidError({ message: errorMessage });
+        next(new InvalidError(errorMessage));
       }
       next(err);
     });
@@ -87,7 +87,7 @@ module.exports.updateAvatar = (req, res, next) => {
     })
     .catch((err) => {
       if (err.statusCode === 404) {
-        throw new ErrorNotFound('Нет пользователя с таким id');
+        next(new ErrorNotFound('Нет пользователя с таким id'));
       }
       if (err.name === 'ValidationError') {
         let errorMessage = 'Переданны неверные данные: ';
@@ -97,7 +97,7 @@ module.exports.updateAvatar = (req, res, next) => {
             errorMessage += `Ошибка в поле ${errVal.path}, `;
           }
         });
-        throw new InvalidError(errorMessage);
+        next(new InvalidError(errorMessage));
       }
       next(err);
     });
