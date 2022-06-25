@@ -10,13 +10,7 @@ const { login } = require('./controllers/login');
 const auth = require('./middlewares/auth');
 const ErrorNotFound = require('./utils/errorNotFound');
 const { requestLogger, errorLogger } = require('./middlewares/logger');
-// const cors = require('./middlewares/cors');
-
-const allowedCors = [
-  'https://mesto.yanbyst.nomoreparties.sbs',
-  'http://mesto.yanbyst.nomoreparties.sbs',
-  'localhost:3000',
-];
+const cors = require('./middlewares/cors');
 
 const { PORT = 3000 } = process.env;
 
@@ -34,16 +28,9 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
   useNewUrlParser: true,
 });
 
-app.use((req, res, next) => {
-  const { origin } = req.headers;
-  if (allowedCors.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', '*');
-  }
+app.use(cors());
 
-  next();
-});
-
-app.use(requestLogger);
+app.use(requestLogger());
 
 app.post('/signin', celebrate({
   body: Joi.object().keys({
