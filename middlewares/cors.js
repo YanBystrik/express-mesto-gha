@@ -2,11 +2,11 @@
 const allowedCors = [
   'https://mesto.yanbyst.nomoreparties.sbs',
   'http://mesto.yanbyst.nomoreparties.sbs',
-  'localhost:3000',
+  'localhost:3005',
 ];
 
 module.exports = (req, res, next) => {
-  const { origin } = req.headers; // Сохраняем источник запроса в переменную origin
+  const origin = req.headers; // Сохраняем источник запроса в переменную origin
   // проверяем, что источник запроса есть среди разрешённых
   if (allowedCors.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
