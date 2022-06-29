@@ -5,18 +5,18 @@ const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const { errors, celebrate, Joi } = require('celebrate');
+const cors = require('cors');
 const { createUser } = require('./controllers/createUser');
 const { login } = require('./controllers/login');
 const auth = require('./middlewares/auth');
 const ErrorNotFound = require('./utils/errorNotFound');
 const { requestLogger, errLogger } = require('./middlewares/logger');
-const cors = require('./middlewares/cors');
 require('dotenv').config();
 
 const { PORT = 3000 } = process.env;
 
 const app = express();
-app.use(cors);
+app.use(cors());
 app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
