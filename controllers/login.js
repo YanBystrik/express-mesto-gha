@@ -10,7 +10,7 @@ module.exports.login = (req, res, next) => {
       if (!user) {
         throw new AuthError('Такого пользователя не существует');
       }
-      const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
+      const token = jwt.sign({ _id: user._id }, 'ctrhtnysqrkxrjnjhsqnsythfpuflftimybrjulf', { expiresIn: '7d' });
       res
         .cookie('jwt', token, {
           httpOnly: true,

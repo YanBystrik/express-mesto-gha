@@ -64,20 +64,20 @@ app.post('/signup', celebrate({
 
 app.use(auth);
 
-app.use(require('./routes/users'));
-app.use(require('./routes/cards'));
-
 app.get('/crash-test', () => {
   setTimeout(() => {
     throw new Error('Сервер сейчас упадёт');
   }, 0);
 });
 
-app.use(errLogger);
+app.use(require('./routes/users'));
+app.use(require('./routes/cards'));
 
 app.use((req, res, next) => {
   next(new ErrorNotFound('404 такой страницы нет'));
 });
+
+app.use(errLogger);
 
 app.use(errors());
 
