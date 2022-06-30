@@ -13,10 +13,23 @@ const ErrorNotFound = require('./utils/errorNotFound');
 const { requestLogger, errLogger } = require('./middlewares/logger');
 require('dotenv').config();
 
+const corsAllowed = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://mesto.yanbyst.nomoreparties.sbs',
+  'https://mesto.yanbyst.nomoreparties.sbs',
+];
+
+const corsOptions = {
+  origin: corsAllowed,
+  optionsSuccessStatus: 200,
+  credentials: true,
+};
+
 const { PORT = 3000 } = process.env;
 
 const app = express();
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
