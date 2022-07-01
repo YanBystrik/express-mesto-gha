@@ -62,13 +62,13 @@ app.post('/signup', celebrate({
   }),
 }), createUser);
 
-app.use(auth);
-
 app.get('/crash-test', () => {
   setTimeout(() => {
     throw new Error('Сервер сейчас упадёт');
   }, 0);
 });
+
+app.use(auth);
 
 app.use(require('./routes/users'));
 app.use(require('./routes/cards'));
